@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Hazel Calorie Tracker</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    :root{
+      --bg:#0f1115; --card:#171a21; --card2:#1f2430; --text:#f3f5f7; --muted:#a7b0bd;
+      --accent:#233042; --accentBorder:#345175; --good:#b0ffb7; --warn:#ffd48b; --bad:#ff9f9f;
+      --border:#2b3240; --radius:18px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;background:linear-gradient(180deg,#0d1015 0%,#121722 100%);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+    .app{max-width:760px;margin:0 auto;padding:env(safe-area-inset-top) 14px calc(20px + env(safe-area-inset-bottom))}
+    .header{position:sticky;top:0;z-index:5;backdrop-filter:blur(12px);background:rgba(15,17,21,.88);padding:14px 0 12px;margin-bottom:14px}
+    h1{margin:0 0 4px;font-size:1.35rem}.sub{color:var(--muted);font-size:.95rem}
+    .card{background:rgba(23,26,33,.95);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+    .top-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .stat{background:var(--card2);border-radius:16px;padding:14px;border:1px solid rgba(255,255,255,.04)}
+    .stat-label{color:var(--muted);font-size:.85rem;margin-bottom:6px}.stat-value{font-size:1.55rem;font-weight:700}
+    .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+    .section-title{font-size:1rem;font-weight:700;margin:2px 0 12px}
+    .tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+    .tab{white-space:nowrap}
+    .tab.active{background:#263247;border-color:#3c567a}
+    .food-row,.entry-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid rgba(255,255,255,.05)}
+    .food-row:first-child,.entry-row:first-child{border-top:0;padding-top:0}
+    .food-name{font-weight:600}.food-cal,.helper,.entry-right,.footer-note{color:var(--muted)}
+    .food-cal,.entry-right,.helper,.footer-note{font-size:.9rem}
+    .qty-pill{min-width:38px;text-align:center;font-weight:700;background:var(--card2);border:1px solid rgba(255,255,255,.06);border-radius:999px;padding:10px 12px}
+    .row-actions{display:flex;gap:8px;flex-wrap:wrap}
+    button,input{font:inherit}
+    button{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:var(--card2);color:var(--text);padding:12px 14px;font-weight:700;cursor:pointer}
+    button.primary{background:var(--accent);border-color:var(--accentBorder)}
+    button:active{transform:scale(.98)}
+    button.plus,button.minus{min-width:52px;font-size:1.05rem}
+    button.small{padding:10px 12px;font-size:.92rem}
+    input{width:100%;background:var(--card2);color:var(--text);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
+    .form-grid{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-bottom:10px}
+    .form-grid-3{display:grid;grid-template-columns:1fr 100px 86px;gap:8px;margin-top:8px}
+    .weight-list{display:grid;gap:8px;margin-top:8px}
+    .weight-item{display:flex;justify-content:space-between;gap:8px;background:var(--card2);padding:10px 12px;border-radius:14px}
+    .empty{text-align:center;padding:18px 10px 6px;color:var(--muted)}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1e2b3e;border:1px solid #355073;color:white;padding:10px 14px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+    .toast.show{opacity:1}
+    @media (max-width:520px){.top-grid{grid-template-columns:1fr}.form-grid,.form-grid-3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>Hazel Calorie Tracker</h1>
+      <div class="sub">Fast-add calories that save on your device.</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="today">Today</button>
+      <button class="tab" data-tab="foods">Quick Add</button>
+      <button class="tab" data-tab="custom">Custom Food</button>
+      <button class="tab" data-tab="weight">Weekly Weight</button>
+    </div>
+
+    <section id="today" class="tab-panel">
+      <div class="card">
+        <div class="top-grid">
+          <div class="stat"><div class="stat-label">Today's Calories</div><div class="stat-value" id="todayCalories">0</div></div>
+          <div class="stat"><div class="stat-label">Target</div><div class="stat-value">1800</div></div>
+          <div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="remainingCalories">1800</div></div>
+          <div class="stat"><div class="stat-label">Status</div><div class="stat-value good" id="statusText">On track</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Today's entries</div>
+        <div id="entriesList"></div>
+        <div id="entriesEmpty" class="empty">Nothing logged yet. Tap Quick Add to start.</div>
+        <div class="row-actions" style="margin-top:12px;">
+          <button id="clearTodayBtn" class="small">Clear today</button>
+          <button id="copyYesterdayBtn" class="small">Copy yesterday</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="foods" class="tab-panel" style="display:none;">
+      <div class="card">
+        <div class="section-title">Quick add foods</div>
+        <div class="helper" style="margin-bottom:10px;">Tap + to add one serving. Tap − to remove one serving from today.</div>
+        <div id="foodsList"></div>
+      </div>
+    </section>
+
+    <section id="custom" class="tab-panel" style="display:none;">
+      <div class="card">
+        <div class="section-title">Add a custom food</div>
+        <div class="form-grid">
+          <input id="customName" placeholder="Food name" />
+          <input id="customCalories" type="number" min="0" step="1" placeholder="Calories" />
+        </div>
+        <button id="addCustomFoodBtn" class="primary">Save custom food</button>
+        <div class="helper" style="margin-top:10px;">This saves to your phone/browser.</div>
+      </div>
+    </section>
+
+    <section id="weight" class="tab-panel" style="display:none;">
+      <div class="card">
+        <div class="section-title">Weekly weight tracker</div>
+        <div class="form-grid-3">
+          <input id="weightDate" type="date" />
+          <input id="weightValue" type="number" min="0" step="0.1" placeholder="lbs" />
+          <button id="addWeightBtn" class="primary">Add</button>
+        </div>
+        <div class="helper" style="margin-top:10px;">One weigh-in a week is enough.</div>
+        <div class="weight-list" id="weightList"></div>
+        <div id="weightEmpty" class="empty">No weigh-ins yet.</div>
+      </div>
+    </section>
+
+    <div class="footer-note">Everything stays on this device using local storage.</div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "hazel_calorie_tracker_v2";
+      const TARGET_CALORIES = 1800;
+
+      const defaultFoods = [
+        { id: "egg", name: "Egg", calories: 70 },
+        { id: "bagel", name: "Plain Bagel", calories: 270 },
+        { id: "cheese", name: "Cheese Slice", calories: 90 },
+        { id: "ham", name: "Deli Ham Serving", calories: 60 },
+        { id: "tots", name: "Tater Tots (1 cup)", calories: 180 },
+        { id: "sausage", name: "Sausage Serving", calories: 180 },
+        { id: "lettuce", name: "Lettuce (big nacho amount)", calories: 15 },
+        { id: "chips", name: "Tortilla Chips Serving", calories: 150 },
+        { id: "ground_beef", name: "Ground Beef Serving", calories: 200 }
+      ];
+
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(showToast.timeoutId);
+        showToast.timeoutId = setTimeout(() => toast.classList.remove("show"), 1100);
+      }
+
+      function todayKey() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function yesterdayKey() {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return { foods: defaultFoods.slice(), logs: {}, weights: [] };
+          const parsed = JSON.parse(raw);
+          return {
+            foods: Array.isArray(parsed.foods) ? parsed.foods : defaultFoods.slice(),
+            logs: parsed.logs && typeof parsed.logs === "object" ? parsed.logs : {},
+            weights: Array.isArray(parsed.weights) ? parsed.weights : []
+          };
+        } catch (error) {
+          return { foods: defaultFoods.slice(), logs: {}, weights: [] };
+        }
+      }
+
+      let state = loadState();
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function getTodayEntries() {
+        return Array.isArray(state.logs[todayKey()]) ? state.logs[todayKey()] : [];
+      }
+
+      function setTodayEntries(entries) {
+        state.logs[todayKey()] = entries;
+        saveState();
+        renderAll();
+      }
+
+      function addFood(foodId) {
+        const food = state.foods.find(item => item.id === foodId);
+        if (!food) return;
+        const entries = getTodayEntries().map(item => ({ ...item }));
+        const existing = entries.find(item => item.foodId === foodId);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          entries.push({ foodId: food.id, name: food.name, calories: food.calories, quantity: 1 });
+        }
+        setTodayEntries(entries);
+        showToast(`Added 1 ${food.name}`);
+      }
+
+      function removeFood(foodId) {
+        const entries = getTodayEntries().map(item => ({ ...item }));
+        const existing = entries.find(item => item.foodId === foodId);
+        if (!existing) return;
+        existing.quantity -= 1;
+        const filtered = entries.filter(item => item.quantity > 0);
+        setTodayEntries(filtered);
+      }
+
+      function renderToday() {
+        const entries = getTodayEntries();
+        const list = document.getElementById("entriesList");
+        const empty = document.getElementById("entriesEmpty");
+        list.innerHTML = "";
+
+        let total = 0;
+        for (const entry of entries) {
+          const entryTotal = entry.calories * entry.quantity;
+          total += entryTotal;
+          const row = document.createElement("div");
+          row.className = "entry-row";
+          row.innerHTML = `
+            <div>
+              <div class="food-name">${entry.name}</div>
+              <div class="food-cal">${entry.calories} cal × ${entry.quantity}</div>
+            </div>
+            <div class="entry-right">${entryTotal} cal</div>
+            <div class="row-actions">
+              <button class="minus small" data-action="remove" data-id="${entry.foodId}">−</button>
+              <button class="plus primary small" data-action="add" data-id="${entry.foodId}">+</button>
+            </div>
+          `;
+          list.appendChild(row);
+        }
+
+        empty.style.display = entries.length ? "none" : "block";
+
+        document.getElementById("todayCalories").textContent = total;
+        const remaining = TARGET_CALORIES - total;
+        document.getElementById("remainingCalories").textContent = remaining;
+
+        const status = document.getElementById("statusText");
+        status.className = "stat-value";
+        if (remaining >= 400) {
+          status.textContent = "On track";
+          status.classList.add("good");
+        } else if (remaining >= 0) {
+          status.textContent = "Close";
+          status.classList.add("warn");
+        } else {
+          status.textContent = "Over";
+          status.classList.add("bad");
+        }
+      }
+
+      function renderFoods() {
+        const foodsList = document.getElementById("foodsList");
+        const todayEntries = getTodayEntries();
+        foodsList.innerHTML = "";
+
+        for (const food of state.foods) {
+          const todayEntry = todayEntries.find(item => item.foodId === food.id);
+          const quantity = todayEntry ? todayEntry.quantity : 0;
+          const row = document.createElement("div");
+          row.className = "food-row";
+          row.innerHTML = `
+            <div>
+              <div class="food-name">${food.name}</div>
+              <div class="food-cal">${food.calories} cal per serving</div>
+            </div>
+            <div class="qty-pill">${quantity}</div>
+            <div class="row-actions">
+              <button class="minus" data-action="remove" data-id="${food.id}">−</button>
+              <button class="plus primary" data-action="add" data-id="${food.id}">+</button>
+            </div>
+          `;
+          foodsList.appendChild(row);
+        }
+      }
+
+      function renderWeights() {
+        const list = document.getElementById("weightList");
+        const empty = document.getElementById("weightEmpty");
+        list.innerHTML = "";
+
+        const sorted = [...state.weights].sort((a, b) => b.date.localeCompare(a.date));
+        for (const item of sorted) {
+          const row = document.createElement("div");
+          row.className = "weight-item";
+          row.innerHTML = `<span>${item.date}</span><span>${item.weight} lbs</span>`;
+          list.appendChild(row);
+        }
+        empty.style.display = sorted.length ? "none" : "block";
+      }
+
+      function renderAll() {
+        renderToday();
+        renderFoods();
+        renderWeights();
+      }
+
+      function switchTab(tabName) {
+        document.querySelectorAll(".tab").forEach(tab => {
+          tab.classList.toggle("active", tab.dataset.tab === tabName);
+        });
+        document.querySelectorAll(".tab-panel").forEach(panel => {
+          panel.style.display = panel.id === tabName ? "block" : "none";
+        });
+      }
+
+      document.addEventListener("click", function (event) {
+        const actionButton = event.target.closest("[data-action]");
+        if (actionButton) {
+          const action = actionButton.dataset.action;
+          const id = actionButton.dataset.id;
+          if (action === "add") addFood(id);
+          if (action === "remove") removeFood(id);
+          return;
+        }
+
+        const tabButton = event.target.closest(".tab");
+        if (tabButton) {
+          switchTab(tabButton.dataset.tab);
+          return;
+        }
+
+        if (event.target.id === "addCustomFoodBtn") {
+          const nameInput = document.getElementById("customName");
+          const calorieInput = document.getElementById("customCalories");
+          const name = nameInput.value.trim();
+          const calories = Number(calorieInput.value);
+
+          if (!name || !Number.isFinite(calories) || calories < 0) {
+            alert("Add a food name and calories first.");
+            return;
+          }
+
+          state.foods.push({
+            id: "custom_" + Date.now(),
+            name,
+            calories
+          });
+          saveState();
+          nameInput.value = "";
+          calorieInput.value = "";
+          renderAll();
+          switchTab("foods");
+          showToast("Custom food saved");
+          return;
+        }
+
+        if (event.target.id === "addWeightBtn") {
+          const dateInput = document.getElementById("weightDate");
+          const weightInput = document.getElementById("weightValue");
+          const date = dateInput.value;
+          const weight = Number(weightInput.value);
+
+          if (!date || !Number.isFinite(weight) || weight <= 0) {
+            alert("Add a date and weight first.");
+            return;
+          }
+
+          const existingIndex = state.weights.findIndex(item => item.date === date);
+          if (existingIndex >= 0) {
+            state.weights[existingIndex].weight = weight;
+          } else {
+            state.weights.push({ date, weight });
+          }
+          saveState();
+          weightInput.value = "";
+          renderWeights();
+          showToast("Weight saved");
+          return;
+        }
+
+        if (event.target.id === "clearTodayBtn") {
+          if (!confirm("Clear today's entries?")) return;
+          state.logs[todayKey()] = [];
+          saveState();
+          renderAll();
+          return;
+        }
+
+        if (event.target.id === "copyYesterdayBtn") {
+          const yesterdayEntries = state.logs[yesterdayKey()] || [];
+          if (!yesterdayEntries.length) {
+            alert("No entries from yesterday to copy.");
+            return;
+          }
+          state.logs[todayKey()] = JSON.parse(JSON.stringify(yesterdayEntries));
+          saveState();
+          renderAll();
+          showToast("Copied yesterday");
+          return;
+        }
+      });
+
+      document.getElementById("weightDate").value = todayKey();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
