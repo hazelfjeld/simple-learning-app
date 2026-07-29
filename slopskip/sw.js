@@ -1,5 +1,11 @@
-const CACHE = "slopskip-public-v1";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "music-public-v2";
+const SHELL = [
+  "./",
+  "./index.html",
+  "./import-url.html",
+  "./manifest.webmanifest",
+  "./icon.svg"
+];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
