@@ -3,24 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0b0c" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#fbfaf9" />
+  <meta name="color-scheme" content="light" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Music" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icon.svg" />
   <title>Add from URL · Music</title>
   <style>
-    :root{color-scheme:dark;--bg:#0b0b0c;--panel:#171719;--line:#ffffff16;--text:#f3f3f4;--muted:#949499;--button:#ececef;--buttonText:#111113;--danger:#ff8d8d}
+    :root{color-scheme:light;--bg:#fbfaf9;--panel:#fffdfd;--line:#ded5d7;--line2:#cfc3c6;--text:#665e60;--muted:#9a9093;--button:#f1e4e7;--buttonText:#665b5e;--danger:#b96f77;--shadow:rgba(118,104,109,.14)}
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% -10rem,#252528,transparent 35rem),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-    .card{width:min(560px,100%);padding:26px;border:1px solid var(--line);border-radius:25px;background:var(--panel);box-shadow:0 28px 100px #0009}
-    .brand{display:flex;align-items:center;gap:11px;margin-bottom:40px;font-weight:750}.brand img{width:40px;height:40px;border-radius:12px}
-    h1{margin:0 0 10px;font-size:clamp(2.2rem,9vw,4rem);line-height:.96;letter-spacing:-.065em}p{margin:0;color:var(--muted);line-height:1.55}
-    label>span{display:block;margin-bottom:7px;color:#cfcfd3;font-size:.8rem;font-weight:680}.field{margin:25px 0 15px}
-    input[type=url]{width:100%;padding:14px;border:1px solid var(--line);border-radius:13px;outline:0;background:#0d0d0f;color:var(--text);font:inherit}
-    .permission{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid #ffffff10;border-radius:13px;background:#ffffff05}.permission input{margin-top:3px}.permission label{color:#c8c8cc;font-size:.82rem;line-height:1.45}
-    .actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:11px 15px;border:0;border-radius:13px;font:inherit;font-weight:720;text-decoration:none}.primary{background:var(--button);color:var(--buttonText)}.secondary{background:#ffffff0b;color:#cfcfd3;border:1px solid var(--line)}.button:disabled{opacity:.5}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% -8rem,#fff 0,transparent 34rem),linear-gradient(180deg,var(--bg),#f7f1f2);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+    .card{width:min(560px,100%);padding:26px;border:1px solid var(--line);border-radius:27px;background:rgba(255,253,253,.9);box-shadow:0 28px 85px var(--shadow)}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:40px;font-weight:750}.brand img{width:50px;height:50px;border-radius:16px;box-shadow:0 8px 22px var(--shadow)}
+    h1{margin:0 0 10px;font-size:clamp(2.2rem,9vw,4rem);line-height:.96;letter-spacing:-.065em;color:var(--text)}p{margin:0;color:var(--muted);line-height:1.55}
+    label>span{display:block;margin-bottom:7px;color:#81777a;font-size:.8rem;font-weight:680}.field{margin:25px 0 15px}
+    input[type=url]{width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;outline:0;background:#fffafa;color:var(--text);font:inherit}
+    .permission{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid var(--line);border-radius:14px;background:#fbf6f7}.permission input{margin-top:3px}.permission label{color:#81777a;font-size:.82rem;line-height:1.45}
+    .actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:11px 15px;border-radius:14px;font:inherit;font-weight:720;text-decoration:none}.primary{background:var(--button);color:var(--buttonText);border:1px solid #e4d5d9}.secondary{background:#fffafa;color:#81777a;border:1px solid var(--line)}.button:disabled{opacity:.5}
     .status{min-height:1.35em;margin-top:14px;color:var(--muted);font-size:.82rem}.status.error{color:var(--danger)}.fine{margin-top:18px;font-size:.74rem}
     @media(max-width:520px){.actions{display:grid}.button{width:100%}}
   </style>
@@ -44,7 +45,7 @@
     <div id="status" class="status" role="status"></div>
 
     <div class="actions">
-      <a class="button secondary" href="./index.html">Back</a>
+      <a class="button secondary" href="./music.html">Back</a>
       <button id="import" class="button primary" type="button">Add</button>
     </div>
 
@@ -76,7 +77,7 @@
         const name=getFilename(response,source.href),file=new File([blob],name,{type:type||blob.type,lastModified:Date.now()});
         await save({id:makeId(),title:cleanName(name),artist:'Unknown',album:'',audio:file,artwork:null,duration:await readDuration(blob),createdAt:Date.now(),sourceUrl:source.href});
         if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
-        setStatus('Added.');setTimeout(()=>location.href='./index.html',450);
+        setStatus('Added.');setTimeout(()=>location.href='./music.html',450);
       }catch(error){console.error(error);const hint=error instanceof TypeError?' The source may block browser downloads.':'';setStatus((error.message||'Could not add audio.')+hint,true)}finally{button.disabled=false}
     }
     button.addEventListener('click',importAudio);urlInput.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();importAudio()}});
