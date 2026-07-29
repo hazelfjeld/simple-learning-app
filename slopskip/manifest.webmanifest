@@ -1,0 +1,19 @@
+{
+  "name": "SlopSkip — Music Without the Feed",
+  "short_name": "SlopSkip",
+  "description": "A local, feed-free music library.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d0d12",
+  "theme_color": "#111116",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
