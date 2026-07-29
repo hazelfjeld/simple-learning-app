@@ -1,7 +1,7 @@
 const DB_NAME='slopskip-public-v1',STORE='tracks',$=selector=>document.querySelector(selector);
 let tracks=[],visible=[],current=null,audioUrl=null,nowArtUrl=null,artUrls=[],editing=null,pendingArt=null,lastPlaybackError='';
 const audio=$('#audio'),player=$('#player');
-const fallback='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><rect width="300" height="300" rx="54" fill="#202023"/><path d="M75 222V78h43l32 55 32-55h43v144h-42v-75l-33 55-33-55v75z" fill="#ececef"/></svg>`);
+const fallback=new URL('./icon.svg',location.href).href;
 
 function db(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{const store=request.result.createObjectStore(STORE,{keyPath:'id'});store.createIndex('createdAt','createdAt')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
 async function all(){const database=await db();return new Promise((resolve,reject)=>{const request=database.transaction(STORE).objectStore(STORE).getAll();request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
