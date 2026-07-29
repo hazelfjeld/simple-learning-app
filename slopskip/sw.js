@@ -1,4 +1,4 @@
-const CACHE = "music-public-v3";
+const CACHE = "music-public-v4";
 const SHELL = [
   "./",
   "./index.html",
