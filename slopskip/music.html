@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Music" />
+  <meta name="description" content="Your local music library." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <title>Music</title>
+  <link rel="stylesheet" href="./music.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="./icon.svg" alt="" /><span><strong>Music</strong><small>library</small></span></div>
+    <div class="top-actions"><a class="button secondary" href="./import-url.html">From URL</a><button class="button primary" id="importTop" type="button">Add</button></div>
+  </header>
+
+  <main>
+    <section class="hero"><div><h1>Your music.</h1><p>Stored here. Ready when you are.</p></div><button class="button primary" id="importHero" type="button">Add music</button></section>
+    <p class="local-note">Stored on this device.</p>
+    <section>
+      <div class="section-head"><h2>Library</h2><span id="count">0 songs</span></div>
+      <div class="toolbar"><label class="search">⌕<input id="search" type="search" placeholder="Search" aria-label="Search library" /></label><select id="sort" aria-label="Sort library"><option value="recent">Recent</option><option value="title">Title</option><option value="artist">Artist</option></select></div>
+      <div class="empty" id="empty"><img src="./icon.svg" alt="" /><h3>No music yet</h3><p>Add audio files to start.</p><button class="button secondary" id="importEmpty" type="button">Add music</button></div>
+      <ul class="tracks" id="tracks"></ul>
+    </section>
+  </main>
+
+  <section class="player" id="player" aria-label="Now playing" hidden>
+    <div class="now"><img id="nowArt" alt="" /><div><strong id="nowTitle"></strong><span id="nowArtist"></span></div></div>
+    <div class="controls"><button class="icon" id="prev" type="button" aria-label="Previous">◀</button><button class="play" id="play" type="button" aria-label="Play">▶</button><button class="icon" id="next" type="button" aria-label="Next">▶</button></div>
+    <audio id="audio" preload="auto" playsinline webkit-playsinline></audio>
+  </section>
+
+  <dialog id="importDialog"><form class="modal" id="importForm"><div class="modal-head"><h2>Add music</h2><button class="icon" type="button" data-close="importDialog" aria-label="Close">×</button></div><label class="drop"><strong>Choose audio files</strong><span>Select one or more files.</span><input id="files" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac" multiple required /></label><div class="import-options"><a class="button secondary" href="./import-url.html">From URL</a><button class="button primary" type="submit">Add files</button></div><div class="status" id="importStatus"></div></form></dialog>
+
+  <dialog id="editDialog"><form class="modal" id="editForm"><div class="modal-head"><h2>Edit</h2><button class="icon" type="button" data-close="editDialog" aria-label="Close">×</button></div><div class="edit-art"><img id="editPreview" alt="Artwork" /><label><span>Artwork</span><input id="editArt" type="file" accept="image/*" /></label></div><div class="fields"><label><span>Title</span><input id="editTitle" required maxlength="180" /></label><label><span>Artist</span><input id="editArtist" maxlength="180" /></label><label><span>Album</span><input id="editAlbum" maxlength="180" /></label></div><div class="status" id="editStatus"></div><div class="actions split"><button class="button danger" type="button" id="delete">Delete</button><div><button class="button ghost" type="button" data-close="editDialog">Cancel</button><button class="button primary" type="submit">Save</button></div></div></form></dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="./music.js" defer></script>
+</body>
+</html>
