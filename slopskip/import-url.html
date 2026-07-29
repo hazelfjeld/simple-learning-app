@@ -1,1 +1,85 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111116"><title>Import permitted audio · SlopSkip</title><style>:root{color-scheme:dark;--bg:#0d0d12;--panel:#18181f;--text:#f5f5f7;--muted:#a5a5b0;--lime:#d7ff7a;--danger:#ff9d9d}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at top,#242430,#0d0d12 40rem);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.card{width:min(620px,100%);padding:26px;border:1px solid #ffffff18;border-radius:24px;background:var(--panel);box-shadow:0 30px 100px #000a}.brand{display:flex;align-items:center;gap:11px;margin-bottom:30px;font-weight:850}.mark{display:grid;place-items:center;width:40px;aspect-ratio:1;border-radius:12px;background:var(--lime);color:#101014}.eyebrow{margin:0 0 8px;color:var(--lime);font-size:.75rem;font-weight:850;letter-spacing:.14em}h1{margin:0 0 12px;font-size:clamp(2rem,8vw,3.4rem);line-height:.98;letter-spacing:-.055em}p{color:var(--muted);line-height:1.55}.field{display:grid;gap:7px;margin:22px 0}.field span{font-size:.84rem;color:#d8d8df;font-weight:700}input[type=url]{width:100%;padding:14px;border-radius:13px;border:1px solid #ffffff1c;background:#0e0e13;color:var(--text);font:inherit;outline:none}.permission{display:flex;align-items:flex-start;gap:10px;padding:14px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff08}.permission input{margin-top:3px}.permission label{font-size:.86rem;color:#d7d7de;line-height:1.45}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}.button{border:0;border-radius:13px;padding:12px 16px;font:inherit;font-weight:800;text-decoration:none}.primary{background:var(--lime);color:#101014}.secondary{background:#ffffff10;color:var(--text);border:1px solid #ffffff16}.button:disabled{opacity:.55}.status{min-height:1.4em;margin-top:16px;color:var(--muted);font-size:.88rem}.error{color:var(--danger)}.fine{font-size:.78rem;margin-bottom:0}@media(max-width:560px){.actions{display:grid}.button{text-align:center}}</style></head><body><main class="card"><div class="brand"><span class="mark">S</span>SlopSkip</div><p class="eyebrow">DIRECT FILE IMPORT</p><h1>Add permitted audio from a URL.</h1><p>Paste a link that returns an actual audio file, such as an MP3 you host, purchased download, public-domain recording, or podcast file. Ordinary web pages and streaming-service pages are not audio files.</p><div class="field"><label for="url"><span>Direct audio URL</span></label><input id="url" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/audio/song.mp3"></div><div class="permission"><input id="permission" type="checkbox"><label for="permission">I own this audio or have permission to save a local copy.</label></div><div id="status" class="status" role="status"></div><div class="actions"><a class="button secondary" href="./index.html">Back to library</a><button id="import" class="button primary" type="button">Import into SlopSkip</button></div><p class="fine">The source server must allow cross-origin browser requests. Files are limited to 250 MB and remain in this browser’s local storage.</p></main><script>const DB_NAME='slopskip-public-v1',STORE='tracks',MAX=250*1024*1024;const urlInput=document.querySelector('#url'),permission=document.querySelector('#permission'),button=document.querySelector('#import'),status=document.querySelector('#status');function setStatus(message,isError=false){status.textContent=message;status.classList.toggle('error',isError)}function db(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{const store=request.result.createObjectStore(STORE,{keyPath:'id'});store.createIndex('createdAt','createdAt')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}async function save(track){const database=await db();return new Promise((resolve,reject)=>{const request=database.transaction(STORE,'readwrite').objectStore(STORE).put(track);request.onsuccess=()=>resolve();request.onerror=()=>reject(request.error)})}function makeId(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2)}function cleanName(value){return value.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim()||'Imported audio'}function filename(response,url){const disposition=response.headers.get('content-disposition')||'';const match=disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);let name='';try{name=match?decodeURIComponent(match[1]||match[2]):decodeURIComponent(new URL(response.url||url).pathname.split('/').pop()||'')}catch{}return name||'imported-audio'}function readDuration(blob){return new Promise(resolve=>{const audio=document.createElement('audio'),objectUrl=URL.createObjectURL(blob);audio.preload='metadata';audio.onloadedmetadata=()=>{const value=audio.duration;URL.revokeObjectURL(objectUrl);resolve(Number.isFinite(value)?value:0)};audio.onerror=()=>{URL.revokeObjectURL(objectUrl);resolve(0)};audio.src=objectUrl})}async function importAudio(){if(!permission.checked){setStatus('Confirm that you have permission to save the audio.',true);return}let source;try{source=new URL(urlInput.value.trim())}catch{setStatus('Paste a valid URL.',true);return}if(!['http:','https:'].includes(source.protocol)){setStatus('Only http and https URLs are supported.',true);return}button.disabled=true;setStatus('Connecting to the file server…');try{const response=await fetch(source.href,{mode:'cors',redirect:'follow'});if(!response.ok)throw new Error(`The server returned ${response.status}.`);const type=(response.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();if(!type.startsWith('audio/'))throw new Error('That URL did not return an audio file.');const declared=Number(response.headers.get('content-length')||0);if(declared>MAX)throw new Error('The file is larger than 250 MB.');setStatus('Saving the audio locally…');const blob=await response.blob();if(!blob.size)throw new Error('The server returned an empty file.');if(blob.size>MAX)throw new Error('The file is larger than 250 MB.');const name=filename(response,source.href);await save({id:makeId(),title:cleanName(name),artist:'Unknown artist',album:'',audio:new File([blob],name,{type:type||blob.type,lastModified:Date.now()}),artwork:null,duration:await readDuration(blob),createdAt:Date.now(),sourceUrl:source.href});if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});setStatus('Imported. Returning to your library…');setTimeout(()=>location.href='./index.html',500)}catch(error){console.error(error);const suffix=error instanceof TypeError?' The source may block browser downloads (CORS).':'';setStatus((error.message||'The audio could not be imported.')+suffix,true)}finally{button.disabled=false}}button.addEventListener('click',importAudio);urlInput.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();importAudio()}});</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Music" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <title>Add from URL · Music</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0b0c;--panel:#171719;--line:#ffffff16;--text:#f3f3f4;--muted:#949499;--button:#ececef;--buttonText:#111113;--danger:#ff8d8d}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% -10rem,#252528,transparent 35rem),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+    .card{width:min(560px,100%);padding:26px;border:1px solid var(--line);border-radius:25px;background:var(--panel);box-shadow:0 28px 100px #0009}
+    .brand{display:flex;align-items:center;gap:11px;margin-bottom:40px;font-weight:750}.brand img{width:40px;height:40px;border-radius:12px}
+    h1{margin:0 0 10px;font-size:clamp(2.2rem,9vw,4rem);line-height:.96;letter-spacing:-.065em}p{margin:0;color:var(--muted);line-height:1.55}
+    label>span{display:block;margin-bottom:7px;color:#cfcfd3;font-size:.8rem;font-weight:680}.field{margin:25px 0 15px}
+    input[type=url]{width:100%;padding:14px;border:1px solid var(--line);border-radius:13px;outline:0;background:#0d0d0f;color:var(--text);font:inherit}
+    .permission{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid #ffffff10;border-radius:13px;background:#ffffff05}.permission input{margin-top:3px}.permission label{color:#c8c8cc;font-size:.82rem;line-height:1.45}
+    .actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:11px 15px;border:0;border-radius:13px;font:inherit;font-weight:720;text-decoration:none}.primary{background:var(--button);color:var(--buttonText)}.secondary{background:#ffffff0b;color:#cfcfd3;border:1px solid var(--line)}.button:disabled{opacity:.5}
+    .status{min-height:1.35em;margin-top:14px;color:var(--muted);font-size:.82rem}.status.error{color:var(--danger)}.fine{margin-top:18px;font-size:.74rem}
+    @media(max-width:520px){.actions{display:grid}.button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand"><img src="./icon.svg" alt="" /><span>Music</span></div>
+    <h1>Add from URL</h1>
+    <p>Paste a direct audio link.</p>
+
+    <div class="field">
+      <label for="url"><span>URL</span></label>
+      <input id="url" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/song.mp3" />
+    </div>
+
+    <div class="permission">
+      <input id="permission" type="checkbox" />
+      <label for="permission">I have permission to save this audio.</label>
+    </div>
+
+    <div id="status" class="status" role="status"></div>
+
+    <div class="actions">
+      <a class="button secondary" href="./index.html">Back</a>
+      <button id="import" class="button primary" type="button">Add</button>
+    </div>
+
+    <p class="fine">Direct audio files only. Maximum 250 MB.</p>
+  </main>
+
+  <script>
+    const DB_NAME='slopskip-public-v1',STORE='tracks',MAX_SIZE=250*1024*1024;
+    const urlInput=document.querySelector('#url'),permission=document.querySelector('#permission'),button=document.querySelector('#import'),status=document.querySelector('#status');
+    function setStatus(message,isError=false){status.textContent=message;status.classList.toggle('error',isError)}
+    function openDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{const store=request.result.createObjectStore(STORE,{keyPath:'id'});store.createIndex('createdAt','createdAt')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
+    async function save(track){const database=await openDb();return new Promise((resolve,reject)=>{const request=database.transaction(STORE,'readwrite').objectStore(STORE).put(track);request.onsuccess=()=>resolve();request.onerror=()=>reject(request.error)})}
+    function makeId(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2)}
+    function cleanName(value){return value.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim()||'Imported audio'}
+    function getFilename(response,originalUrl){const disposition=response.headers.get('content-disposition')||'';const match=disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);let name='';try{name=match?decodeURIComponent(match[1]||match[2]):decodeURIComponent(new URL(response.url||originalUrl).pathname.split('/').pop()||'')}catch{}return name||'imported-audio'}
+    function readDuration(blob){return new Promise(resolve=>{const audio=document.createElement('audio'),objectUrl=URL.createObjectURL(blob);audio.preload='metadata';audio.onloadedmetadata=()=>{const value=audio.duration;URL.revokeObjectURL(objectUrl);resolve(Number.isFinite(value)?value:0)};audio.onerror=()=>{URL.revokeObjectURL(objectUrl);resolve(0)};audio.src=objectUrl})}
+    async function importAudio(){
+      if(!permission.checked){setStatus('Confirm permission first.',true);return}
+      let source;try{source=new URL(urlInput.value.trim())}catch{setStatus('Enter a valid URL.',true);return}
+      if(!['http:','https:'].includes(source.protocol)){setStatus('Use an http or https URL.',true);return}
+      button.disabled=true;setStatus('Downloading…');
+      try{
+        const response=await fetch(source.href,{mode:'cors',redirect:'follow'});
+        if(!response.ok)throw new Error(`Server returned ${response.status}.`);
+        const type=(response.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();
+        if(!type.startsWith('audio/'))throw new Error('That link is not a direct audio file.');
+        const declaredSize=Number(response.headers.get('content-length')||0);if(declaredSize>MAX_SIZE)throw new Error('File is larger than 250 MB.');
+        const blob=await response.blob();if(!blob.size)throw new Error('The file is empty.');if(blob.size>MAX_SIZE)throw new Error('File is larger than 250 MB.');
+        const name=getFilename(response,source.href),file=new File([blob],name,{type:type||blob.type,lastModified:Date.now()});
+        await save({id:makeId(),title:cleanName(name),artist:'Unknown',album:'',audio:file,artwork:null,duration:await readDuration(blob),createdAt:Date.now(),sourceUrl:source.href});
+        if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
+        setStatus('Added.');setTimeout(()=>location.href='./index.html',450);
+      }catch(error){console.error(error);const hint=error instanceof TypeError?' The source may block browser downloads.':'';setStatus((error.message||'Could not add audio.')+hint,true)}finally{button.disabled=false}
+    }
+    button.addEventListener('click',importAudio);urlInput.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();importAudio()}});
+  </script>
+</body>
+</html>
