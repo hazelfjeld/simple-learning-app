@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111116" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SlopSkip" />
+  <meta name="description" content="A local, feed-free music library." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <title>SlopSkip</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0d0d12; --panel:#17171e; --panel2:#202029; --text:#f5f5f7; --muted:#a5a5b0; --lime:#d7ff7a; --danger:#ff7474; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:radial-gradient(circle at top,#20202a 0,#0d0d12 38rem); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    body { padding-bottom:118px; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .topbar { position:sticky; top:0; z-index:5; display:flex; justify-content:space-between; align-items:center; gap:16px; padding:calc(14px + env(safe-area-inset-top)) 20px 14px; background:rgba(13,13,18,.84); backdrop-filter:blur(18px); border-bottom:1px solid #ffffff12; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:-.02em; }
+    .mark { display:grid; place-items:center; width:38px; aspect-ratio:1; border-radius:12px; background:var(--lime); color:#101014; box-shadow:0 0 30px #d7ff7a35; }
+    .brand small { display:block; color:var(--muted); font-size:.72rem; font-weight:600; letter-spacing:.02em; }
+    .primary,.secondary,.danger,.ghost { border:0; border-radius:13px; padding:11px 15px; font-weight:750; }
+    .primary { background:var(--lime); color:#101014; }
+    .secondary { background:#ffffff10; color:var(--text); border:1px solid #ffffff16; }
+    .danger { background:#ff74741a; color:#ff9d9d; }
+    .ghost { background:transparent; color:var(--muted); }
+    main { width:min(980px,100%); margin:auto; padding:28px 18px 60px; }
+    .hero { display:grid; grid-template-columns:1fr auto; gap:22px; align-items:end; padding:34px; background:linear-gradient(135deg,#24242f,#15151c); border:1px solid #ffffff14; border-radius:26px; box-shadow:0 25px 80px #0008; }
+    .eyebrow { margin:0 0 10px; color:var(--lime); font-size:.74rem; font-weight:850; letter-spacing:.15em; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:12px; font-size:clamp(2rem,7vw,4.5rem); line-height:.95; letter-spacing:-.065em; max-width:780px; }
+    .hero p:last-child { color:var(--muted); max-width:650px; line-height:1.55; margin-bottom:0; }
+    .notice { margin:16px 0 30px; padding:13px 16px; border-radius:14px; background:#d7ff7a10; border:1px solid #d7ff7a22; color:#dfe6cb; font-size:.88rem; }
+    .section-head,.toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .section-head h2 { margin:0; font-size:1.6rem; }
+    #count { color:var(--muted); font-size:.9rem; }
+    .toolbar { margin:18px 0; }
+    .search { flex:1; display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid #ffffff12; border-radius:14px; padding:0 13px; }
+    .search input { width:100%; background:none; border:0; outline:0; color:var(--text); padding:13px 0; }
+    select { color:var(--text); background:var(--panel); border:1px solid #ffffff12; border-radius:14px; padding:12px; }
+    .empty { text-align:center; padding:70px 20px; border:1px dashed #ffffff20; border-radius:22px; color:var(--muted); }
+    .empty-icon { width:78px; height:78px; margin:0 auto 18px; border-radius:50%; border:14px solid #ffffff16; box-shadow:inset 0 0 0 8px #0d0d12; background:var(--lime); }
+    .tracks { list-style:none; padding:0; margin:0; display:grid; gap:9px; }
+    .track { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:10px; padding:10px; background:var(--panel); border:1px solid #ffffff0e; border-radius:17px; }
+    .track.active { border-color:#d7ff7a55; background:#d7ff7a0d; }
+    .track-main { min-width:0; display:flex; align-items:center; gap:13px; text-align:left; border:0; background:none; color:inherit; padding:0; }
+    .art { width:56px; height:56px; flex:0 0 auto; object-fit:cover; border-radius:13px; background:linear-gradient(135deg,#d7ff7a,#7a8fff); }
+    .track-copy { min-width:0; }
+    .track-copy strong,.track-copy span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .track-copy span,.duration { color:var(--muted); font-size:.84rem; margin-top:3px; }
+    .icon { width:42px; height:42px; border-radius:12px; border:0; background:#ffffff0d; color:var(--text); }
+    .player { position:fixed; z-index:10; left:50%; bottom:max(12px,env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(960px,calc(100% - 20px)); display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; padding:12px; background:rgba(28,28,36,.94); backdrop-filter:blur(22px); border:1px solid #ffffff1b; border-radius:21px; box-shadow:0 18px 70px #000b; }
+    .now { min-width:0; display:flex; align-items:center; gap:11px; }
+    .now img { width:50px; height:50px; object-fit:cover; border-radius:12px; }
+    .now div { min-width:0; }
+    .now strong,.now span { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .now span { color:var(--muted); font-size:.82rem; }
+    .controls { display:flex; align-items:center; gap:8px; }
+    .play { width:48px; height:48px; border-radius:50%; border:0; color:#111116; background:var(--lime); font-size:1.1rem; }
+    dialog { width:min(530px,calc(100% - 24px)); border:1px solid #ffffff20; border-radius:22px; background:#18181f; color:var(--text); padding:0; box-shadow:0 30px 120px #000; }
+    dialog::backdrop { background:#000a; backdrop-filter:blur(5px); }
+    .modal { padding:23px; }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .drop { display:block; margin:18px 0; padding:30px 16px; text-align:center; background:#ffffff08; border:1px dashed #ffffff2c; border-radius:18px; }
+    .drop input { width:100%; margin-top:14px; }
+    .fields { display:grid; gap:12px; }
+    label span { display:block; color:var(--muted); font-size:.8rem; margin-bottom:6px; }
+    .fields input { width:100%; padding:12px; color:var(--text); background:#0f0f14; border:1px solid #ffffff16; border-radius:12px; outline:0; }
+    .edit-art { display:flex; align-items:center; gap:15px; margin:14px 0; }
+    .edit-art img { width:80px; height:80px; object-fit:cover; border-radius:16px; }
+    .actions { display:flex; justify-content:flex-end; gap:9px; margin-top:19px; }
+    .actions.split { justify-content:space-between; }
+    .status { color:var(--muted); min-height:1.3em; font-size:.84rem; margin-top:10px; }
+    .toast { position:fixed; z-index:30; left:50%; bottom:125px; transform:translateX(-50%); padding:11px 15px; border-radius:999px; background:#f5f5f7; color:#111116; font-weight:700; box-shadow:0 10px 40px #0008; }
+    [hidden] { display:none !important; }
+    @media (max-width:680px) { .hero { grid-template-columns:1fr; padding:25px; } .hero .primary { width:100%; } .track { grid-template-columns:minmax(0,1fr) auto; } .duration { display:none; } .player { grid-template-columns:1fr; } .controls { justify-content:center; } body { padding-bottom:180px; } }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="mark">S</span><span>SlopSkip<small>music without the feed</small></span></div>
+  <button class="primary" id="importTop">Import music</button>
+</header>
+<main>
+  <section class="hero">
+    <div><p class="eyebrow">LOCAL · OFFLINE · YOURS</p><h1>Your music. No slot machine attached.</h1><p>Import audio you own and keep it in a quiet local library. No Shorts, algorithmic feed, autoplay rabbit hole, or account.</p></div>
+    <button class="primary" id="importHero">Choose audio files</button>
+  </section>
+  <div class="notice">Songs are stored locally for this exact website on this device. Keep the originals—clearing browser data can erase the library.</div>
+  <section>
+    <div class="section-head"><div><p class="eyebrow">LIBRARY</p><h2>Saved music</h2></div><span id="count">0 tracks</span></div>
+    <div class="toolbar"><label class="search">⌕<input id="search" type="search" placeholder="Search title, artist, or album" /></label><select id="sort"><option value="recent">Recently added</option><option value="title">Title</option><option value="artist">Artist</option></select></div>
+    <div class="empty" id="empty"><div class="empty-icon"></div><h3>Nothing here yet</h3><p>Import MP3, M4A, AAC, WAV, OGG, Opus, or FLAC files from the Files app.</p><button class="secondary" id="importEmpty">Import your first song</button></div>
+    <ul class="tracks" id="tracks"></ul>
+  </section>
+</main>
+<section class="player" id="player" hidden>
+  <div class="now"><img id="nowArt" alt=""/><div><strong id="nowTitle"></strong><span id="nowArtist"></span></div></div>
+  <div class="controls"><button class="icon" id="prev" aria-label="Previous">◀</button><button class="play" id="play" aria-label="Play">▶</button><button class="icon" id="next" aria-label="Next">▶</button></div>
+  <audio id="audio" preload="metadata"></audio>
+</section>
+<dialog id="importDialog"><form class="modal" id="importForm"><div class="modal-head"><div><p class="eyebrow">ADD TO LIBRARY</p><h2>Import audio</h2></div><button class="icon" type="button" data-close="importDialog">×</button></div><label class="drop"><strong>Choose one or more audio files</strong><input id="files" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac" multiple required /></label><div class="status" id="importStatus"></div><div class="actions"><button class="ghost" type="button" data-close="importDialog">Cancel</button><button class="primary" type="submit">Import</button></div></form></dialog>
+<dialog id="editDialog"><form class="modal" id="editForm"><div class="modal-head"><div><p class="eyebrow">TRACK DETAILS</p><h2>Edit song</h2></div><button class="icon" type="button" data-close="editDialog">×</button></div><div class="edit-art"><img id="editPreview" alt="Artwork"/><label><span>Replace artwork</span><input id="editArt" type="file" accept="image/*" /></label></div><div class="fields"><label><span>Title</span><input id="editTitle" required maxlength="180" /></label><label><span>Artist</span><input id="editArtist" maxlength="180" /></label><label><span>Album</span><input id="editAlbum" maxlength="180" /></label></div><div class="status" id="editStatus"></div><div class="actions split"><button class="danger" type="button" id="delete">Delete</button><div><button class="ghost" type="button" data-close="editDialog">Cancel</button><button class="primary" type="submit">Save</button></div></div></form></dialog>
+<div class="toast" id="toast" hidden></div>
+<script>
+const DB_NAME='slopskip-public-v1', STORE='tracks';
+const $=s=>document.querySelector(s); let tracks=[],visible=[],current=null,audioUrl=null,artUrls=[],editing=null,pendingArt=null;
+const audio=$('#audio'), player=$('#player');
+const fallback='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#d7ff7a"/><stop offset="1" stop-color="#7a8fff"/></linearGradient></defs><rect width="300" height="300" rx="50" fill="url(#g)"/><circle cx="150" cy="150" r="78" fill="#111116" opacity=".85"/><circle cx="150" cy="150" r="18" fill="#d7ff7a"/><path d="M192 70v104c0 24-19 43-43 43s-43-14-43-35 19-35 43-35c8 0 15 2 21 5V82z" fill="#fff" opacity=".92"/></svg>`);
+function db(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{const s=r.result.createObjectStore(STORE,{keyPath:'id'});s.createIndex('createdAt','createdAt')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function all(){const d=await db();return new Promise((res,rej)=>{const r=d.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function put(v){const d=await db();return new Promise((res,rej)=>{const r=d.transaction(STORE,'readwrite').objectStore(STORE).put(v);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+async function del(id){const d=await db();return new Promise((res,rej)=>{const r=d.transaction(STORE,'readwrite').objectStore(STORE).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function id(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2)}
+function titleFromFile(n){return n.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim()||'Untitled'}
+function time(n){if(!Number.isFinite(n))return ''; n=Math.max(0,Math.floor(n));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`}
+function duration(file){return new Promise(res=>{const a=document.createElement('audio'),u=URL.createObjectURL(file);a.preload='metadata';a.onloadedmetadata=()=>{const d=a.duration;URL.revokeObjectURL(u);res(Number.isFinite(d)?d:0)};a.onerror=()=>{URL.revokeObjectURL(u);res(0)};a.src=u})}
+function text(bytes){return new TextDecoder('latin1').decode(bytes).replace(/\0+$/,'').trim()}
+function synchsafe(b){return (b[0]<<21)|(b[1]<<14)|(b[2]<<7)|b[3]}
+async function tags(file){if(!/\.mp3$/i.test(file.name))return{};try{const b=new Uint8Array(await file.slice(0,1024*1024).arrayBuffer());if(text(b.slice(0,3))!=='ID3')return{};let p=10,end=10+synchsafe(b.slice(6,10)),out={};while(p+10<=end&&p+10<=b.length){const f=text(b.slice(p,p+4));if(!f)break;const size=b[3]===4?synchsafe(b.slice(p+4,p+8)):((b[p+4]<<24)>>>0)|(b[p+5]<<16)|(b[p+6]<<8)|b[p+7];if(!size||p+10+size>b.length)break;const d=b.slice(p+10,p+10+size);if(['TIT2','TPE1','TALB'].includes(f)){const value=text(d.slice(1));if(f==='TIT2')out.title=value;if(f==='TPE1')out.artist=value;if(f==='TALB')out.album=value}if(f==='APIC'){let i=1;while(i<d.length&&d[i])i++;const mime=text(d.slice(1,i));i++;i++;while(i<d.length&&d[i])i++;i++;if(i<d.length)out.artwork=new Blob([d.slice(i)],{type:mime||'image/jpeg'})}p+=10+size}return out}catch{return{}}}
+function art(track){if(!track.artwork)return fallback;const u=URL.createObjectURL(track.artwork);artUrls.push(u);return u}
+function clearArts(){artUrls.forEach(URL.revokeObjectURL);artUrls=[]}
+async function refresh(){tracks=await all();filter()}
+function filter(){const q=$('#search').value.trim().toLowerCase(),s=$('#sort').value;visible=tracks.filter(t=>!q||[t.title,t.artist,t.album].some(v=>(v||'').toLowerCase().includes(q))).sort((a,b)=>s==='title'?a.title.localeCompare(b.title):s==='artist'?(a.artist||'').localeCompare(b.artist||''):b.createdAt-a.createdAt);render()}
+function render(){clearArts();$('#tracks').replaceChildren();$('#count').textContent=`${tracks.length} ${tracks.length===1?'track':'tracks'}`;$('#empty').hidden=tracks.length>0;visible.forEach(t=>{const li=document.createElement('li');li.className='track'+(current===t.id&&!audio.paused?' active':'');li.innerHTML=`<button class="track-main"><img class="art"><span class="track-copy"><strong></strong><span></span></span></button><span class="duration"></span><button class="icon edit">•••</button>`;li.querySelector('.art').src=art(t);li.querySelector('strong').textContent=t.title;li.querySelector('.track-copy span').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'Unknown artist';li.querySelector('.duration').textContent=time(t.duration);li.querySelector('.track-main').onclick=()=>playTrack(t.id);li.querySelector('.edit').onclick=()=>openEdit(t.id);$('#tracks').append(li)})}
+async function playTrack(trackId,auto=true){const t=tracks.find(x=>x.id===trackId);if(!t)return;if(audioUrl)URL.revokeObjectURL(audioUrl);audioUrl=URL.createObjectURL(t.audio);audio.src=audioUrl;current=t.id;player.hidden=false;$('#nowArt').src=t.artwork?URL.createObjectURL(t.artwork):fallback;$('#nowTitle').textContent=t.title;$('#nowArtist').textContent=t.artist||'Unknown artist';if('mediaSession'in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:t.title,artist:t.artist||'',album:t.album||'',artwork:t.artwork?[{src:$('#nowArt').src,type:t.artwork.type||'image/jpeg'}]:[]})}if(auto)try{await audio.play()}catch{}render()}
+function move(dir){if(!visible.length)return;let i=visible.findIndex(t=>t.id===current);if(i<0)i=0;playTrack(visible[(i+dir+visible.length)%visible.length].id)}
+async function doImport(e){e.preventDefault();const fs=[...$('#files').files];if(!fs.length)return;let done=0;for(const [i,f]of fs.entries()){ $('#importStatus').textContent=`Reading ${i+1} of ${fs.length}: ${f.name}`;try{const m=await tags(f);await put({id:id(),title:m.title||titleFromFile(f.name),artist:m.artist||'Unknown artist',album:m.album||'',audio:f,artwork:m.artwork||null,duration:await duration(f),createdAt:Date.now()+i});done++}catch(err){console.error(err)}}if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});$('#importDialog').close();e.target.reset();await refresh();toast(`Imported ${done} ${done===1?'track':'tracks'}.`)}
+function openEdit(trackId){const t=tracks.find(x=>x.id===trackId);if(!t)return;editing=t.id;pendingArt=t.artwork||null;$('#editTitle').value=t.title;$('#editArtist').value=t.artist||'';$('#editAlbum').value=t.album||'';$('#editPreview').src=t.artwork?URL.createObjectURL(t.artwork):fallback;$('#editDialog').showModal()}
+async function saveEdit(e){e.preventDefault();const t=tracks.find(x=>x.id===editing);if(!t)return;await put({...t,title:$('#editTitle').value.trim()||t.title,artist:$('#editArtist').value.trim()||'Unknown artist',album:$('#editAlbum').value.trim(),artwork:pendingArt});$('#editDialog').close();await refresh();if(current===t.id)playTrack(t.id,!audio.paused);toast('Track updated.')}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(t._x);t._x=setTimeout(()=>t.hidden=true,2200)}
+['#importTop','#importHero','#importEmpty'].forEach(s=>$(s).onclick=()=>$('#importDialog').showModal());document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());$('#importForm').onsubmit=doImport;$('#editForm').onsubmit=saveEdit;$('#search').oninput=filter;$('#sort').onchange=filter;$('#play').onclick=()=>audio.paused?audio.play():audio.pause();$('#prev').onclick=()=>move(-1);$('#next').onclick=()=>move(1);audio.onplay=()=>{$('#play').textContent='Ⅱ';render()};audio.onpause=()=>{$('#play').textContent='▶';render()};audio.onended=()=>move(1);$('#editArt').onchange=e=>{const f=e.target.files[0];if(f){pendingArt=f;$('#editPreview').src=URL.createObjectURL(f)}};$('#delete').onclick=async()=>{if(!editing||!confirm('Delete this track from SlopSkip?'))return;const was=current===editing;await del(editing);$('#editDialog').close();if(was){audio.pause();audio.removeAttribute('src');current=null;player.hidden=true}await refresh();toast('Track deleted.')};
+if('mediaSession'in navigator){for(const [a,f]of Object.entries({play:()=>audio.play(),pause:()=>audio.pause(),previoustrack:()=>move(-1),nexttrack:()=>move(1)}))try{navigator.mediaSession.setActionHandler(a,f)}catch{}}
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+refresh().catch(err=>{console.error(err);toast('Could not open the local library.')});
+</script>
+</body>
+</html>
